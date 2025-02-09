@@ -37,4 +37,33 @@ router.post('/sign-up', async (req, res) => {
     }
 })
 
+router.post('/sign-in', async(req, res) => {
+    try {
+        // Find user in DB
+        const user = await User.findOne({ username: req.body.username })
+
+        // If the user doesn't exist, return a 401 status code with a message
+        if (!user) {
+            return res.status(401).json({ err: 'Invalid credentials'})
+        }
+
+        // Check if password is correct
+        const isPasswordCorrect = bcrypt.compareSync(req.body.password, user.hashedPassword)
+
+        // If the password is incorrect
+        if (!isPasswordCorrect) {
+            return res.status(401).json({ err: 'Invalid credentials'})
+        }
+
+        const payload = { username: user.username, _id: user._id }
+
+        const token = jwt.sign({ payload }, process.env.JWT_SECRET)
+
+        res.status(200).json({ token })
+
+    } catch (err) {
+        res.status(500).json({ err: err.message })
+    }
+})
+
 module.exports = router
